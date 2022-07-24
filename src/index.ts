@@ -1,5 +1,5 @@
 import { Attributes, buildToDelete, buildToInsert, DB, Repository, Statement } from 'query-core';
-import { Info, InfoRepository, Rate, RateComment, RateCommentRepository, RateId, RateReaction, RateReactionRepository, RateRepository } from './core-query';
+import { InfoRepository, Rate, RateComment, RateCommentRepository, RateId, RateReaction, RateReactionRepository, RateRepository } from './core-query';
 
 export * from './core-query';
 export const rateReactionModel: Attributes = {
@@ -44,13 +44,13 @@ export class SqlRateRepository extends Repository<Rate, RateId> implements RateR
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class SqlInfoRepository extends Repository<Info, string> implements InfoRepository {
+export class SqlInfoRepository<T> extends Repository<T, string> implements InfoRepository<T> {
   constructor(db: DB, table: string, attributes: Attributes, protected buildToSave: <T>(obj: T, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined) {
     super(db, table, attributes);
     this.save = this.save.bind(this);
   }
-  async save(obj: Info, ctx?: any): Promise<number> {
-    const stmt = await this.buildToSave(obj, this.table, this.attributes);
+  async save(obj: T, ctx?: any): Promise<number> {
+    const stmt = await this.buildToSave<T>(obj, this.table, this.attributes);
     if (stmt) {
       return this.exec(stmt.query, stmt.params, ctx);
     } else {
@@ -123,7 +123,7 @@ export class SqlRateReactionRepository implements RateReactionRepository {
     const stmt = buildToInsert(obj, this.table, this.attributes, this.db.param);
     if (stmt) {
       return this.exist(id, author, userId).then(ok => {
-        if (ok) {
+        if (ok === false) {
           const query = `update ${this.parent} set ${this.col} = ${this.col} + 1 where ${this.id} = ${this.db.param(1)} and ${this.author} = ${this.db.param(2)}`;
           const s2: Statement = {query, params: [id, author]};
           return this.db.execBatch([stmt, s2]);

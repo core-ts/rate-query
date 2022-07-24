@@ -12,16 +12,6 @@ export interface Rate {
   usefulCount: number;
   replyCount: number;
 }
-export interface Info {
-  id: string;
-  rate: number;
-  rate1: number;
-  rate2: number;
-  rate3: number;
-  rate4: number;
-  rate5: number;
-  viewCount: number;
-}
 
 export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
   | 'boolean' | 'number' | 'integer' | 'string' | 'text'
@@ -85,8 +75,8 @@ export interface RateRepository extends Repository<Rate, RateId> {
   save(obj: Rate, ctx?: any): Promise<number>;
   getRate(id: string, author: string): Promise<Rate | null>;
 }
-export interface InfoRepository extends ViewRepository<Info, string> {
-  save(obj: Info, ctx?: any): Promise<number>;
+export interface InfoRepository<T> extends ViewRepository<T, string> {
+  save(obj: T, ctx?: any): Promise<number>;
 }
 export interface RateReaction {
   id: string;
@@ -107,7 +97,7 @@ export interface RateComment {
   comment: string;
   time: Date;
   updatedAt?: Date;
-  history?: ShortComment;
+  histories?: ShortComment[];
 }
 export interface ShortComment {
   comment: string;
