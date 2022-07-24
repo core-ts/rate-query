@@ -84,12 +84,8 @@ export interface Repository<T, ID> extends ViewRepository<T, ID> {
 export interface RateRepository extends Repository<Rate, RateId> {
   save(obj: Rate, ctx?: any): Promise<number>;
   getRate(id: string, author: string): Promise<Rate | null>;
-  increaseUsefulCount(id: string, author: string, ctx?: any): Promise<number>;
-  decreaseUsefulCount(id: string, author: string, ctx?: any): Promise<number>;
-  increaseReplyCount(id: string, author: string, ctx?: any): Promise<number>;
-  decreaseReplyCount(id: string, author: string, ctx?: any): Promise<number>;
 }
-export interface InfoRepository extends Repository<Info, string> {
+export interface InfoRepository extends ViewRepository<Info, string> {
   save(obj: Info, ctx?: any): Promise<number>;
 }
 export interface RateReaction {
@@ -100,9 +96,8 @@ export interface RateReaction {
   reaction: number;
 }
 export interface RateReactionRepository {
-  getUseful(id: string, author: string, userId: string): Promise<RateReaction | null>;
-  removeUseful(id: string, author: string, userId: string, ctx?: any): Promise<number>;
-  save(obj: RateReaction, ctx?: any): Promise<number>;
+  remove(id: string, author: string, userId: string, ctx?: any): Promise<number>;
+  save(id: string, author: string, userId: string, type: number): Promise<number>;
 }
 export interface RateComment {
   commentId: string;
@@ -111,7 +106,13 @@ export interface RateComment {
   userId: string;
   comment: string;
   time: Date;
+  updatedAt?: Date;
+  history?: ShortComment;
+}
+export interface ShortComment {
+  comment: string;
+  time: Date;
 }
 export interface RateCommentRepository extends Repository<RateComment, string> {
-  save(obj: RateComment, ctx?: any): Promise<number>;
+  remove(commentId: string, id: string, author: string): Promise<number>;
 }
