@@ -1,5 +1,5 @@
 import { Attributes, buildToDelete, buildToInsert, buildToUpdate, DB, metadata, Repository, SqlLoader, Statement, StringMap } from 'query-core';
-import { InfoRepository, Rate, RateComment, RateCommentRepository, RateReaction, RateReactionRepository, RateRepository } from './core-query';
+import { CommentRepository, InfoRepository, RateReaction, RateReactionRepository, RateRepository } from './core-query';
 
 export * from './core-query';
 export const rateReactionModel: Attributes = {
@@ -23,10 +23,18 @@ export const rateReactionModel: Attributes = {
   }
 };
 
-export class SqlRateRepository implements RateRepository {
-  constructor(public db: DB, public table: string, public attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, public max: number, public infoTable: string, public id: string, public rate: string, public count: string, public score: string) {
+export class SqlRateRepository<R> implements RateRepository<R> {
+  constructor(public db: DB, public table: string, public attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, public max: number, public infoTable: string, count?: string, score?: string, rate?: string, rateField?: string, authorCol?: string, id?: string, idField?: string, idCol?: string) {
     const m = metadata(attributes);
     this.map = m.map;
+    this.id = (id && id.length > 0 ? id : 'id');
+    this.rate = (rate && rate.length > 0 ? rate : 'rate');
+    this.count = (count && count.length > 0 ? count : 'count');
+    this.score = (score && score.length > 0 ? score : 'score');
+    this.idField = (idField && idField.length > 0 ? idField : 'id');
+    this.rateField = (rateField && rateField.length > 0 ? rateField : 'rate');
+    this.idCol = (idCol && idCol.length > 0 ? idCol : 'id');
+    this.authorCol = (authorCol && authorCol.length > 0 ? authorCol : 'author');
     this.getRate = this.getRate.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -35,21 +43,32 @@ export class SqlRateRepository implements RateRepository {
     this.updateOldInfo = this.updateOldInfo.bind(this);
   }
   map?: StringMap;
-  getRate(id: string, author: string, ctx?: any): Promise<Rate | null> {
-    return this.db.query<Rate>(`select * from ${this.table} where id = ${this.db.param(1)} and author = ${this.db.param(2)}`, [id, author], this.map, undefined, ctx).then(rates => {
+  count: string;
+  score: string;
+  id: string;
+  rate: string;
+  idField: string;
+  rateField: string;
+  idCol: string;
+  authorCol: string;
+  getRate(id: string, author: string, ctx?: any): Promise<R | null> {
+    return this.db.query<R>(`select * from ${this.table} where ${this.idCol} = ${this.db.param(1)} and ${this.authorCol} = ${this.db.param(2)}`, [id, author], this.map, undefined, ctx).then(rates => {
       return rates && rates.length > 0 ? rates[0] : null;
     });
   }
-  insert(rate: Rate, newInfo?: boolean): Promise<number> {
+  insert(rate: R, newInfo?: boolean): Promise<number> {
     const stmt = buildToInsert(rate, this.table, this.attributes, this.db.param);
     if (stmt) {
+      const obj: any = rate;
+      const rateNum: number = obj[this.rateField];
+      const id: string = obj[this.idField];
       if (newInfo) {
-        const query = this.insertInfo(rate.rate);
-        const s2: Statement = {query, params: [rate.id]};
+        const query = this.insertInfo(rateNum);
+        const s2: Statement = { query, params: [id] };
         return this.db.execBatch([s2, stmt], true);
       } else {
-        const query = this.updateNewInfo(rate.rate);
-        const s2: Statement = {query, params: [rate.id]};
+        const query = this.updateNewInfo(rateNum);
+        const s2: Statement = { query, params: [id] };
         return this.db.execBatch([s2, stmt], true);
       }
     } else {
@@ -72,11 +91,14 @@ export class SqlRateRepository implements RateRepository {
       values (${this.db.param(1)}, ${r}, 1, ${r}, ${ps.join(',')})`;
     return query;
   }
-  update(rate: Rate, oldRate: number): Promise<number> {
+  update(rate: R, oldRate: number): Promise<number> {
     const stmt = buildToUpdate(rate, this.table, this.attributes, this.db.param);
     if (stmt) {
-      const query = this.updateOldInfo(rate.rate, oldRate);
-      const s2: Statement = {query, params: [rate.id]};
+      const obj: any = rate;
+      const rateNum: number = obj[this.rateField];
+      const id: string = obj[this.idField];
+      const query = this.updateOldInfo(rateNum, oldRate);
+      const s2: Statement = { query, params: [id] };
       return this.db.execBatch([s2, stmt], true);
     } else {
       return Promise.resolve(-1);
@@ -112,23 +134,35 @@ export class SqlInfoRepository<T> extends SqlLoader<T, string> implements InfoRe
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class SqlRateCommentRepository extends Repository<RateComment, string> implements RateCommentRepository {
-  constructor(db: DB, table: string, attrs: Attributes, protected parent: string, col?: string, author?: string, id?: string) {
+export class SqlCommentRepository<T> extends Repository<T, string> implements CommentRepository<T> {
+  constructor(db: DB, table: string, attrs: Attributes, protected parent: string, idField?: string, authorField?: string, idCol?: string, authorCol?: string, col?: string, author?: string, time?: string, id?: string) {
     super(db, table, attrs);
     this.col = (col && col.length > 0 ? col : 'replycount');
     this.id = (id && id.length > 0 ? id : 'id');
     this.author = (author && author.length > 0 ? author : 'author');
+    this.time = (time && time.length > 0 ? time : 'time');
+    this.idField = (idField && idField.length > 0 ? idField : 'id');
+    this.authorField = (authorField && authorField.length > 0 ? authorField : 'author');
+    this.idCol = (idCol && idCol.length > 0 ? idCol : 'id');
+    this.authorCol = (authorCol && authorCol.length > 0 ? authorCol : 'author');
     this.insert = this.insert.bind(this);
     this.remove = this.remove.bind(this);
+    this.getComments = this.getComments.bind(this);
   }
-  protected col: string;
-  protected id: string;
-  protected author: string;
-  insert(obj: RateComment): Promise<number> {
+  col: string;
+  id: string;
+  author: string;
+  time: string;
+  protected idField: string;
+  protected authorField: string;
+  protected idCol: string;
+  protected authorCol: string;
+  insert(obj: T): Promise<number> {
     const stmt = buildToInsert(obj, this.table, this.attributes, this.param, this.version);
     if (stmt) {
       const query = `update ${this.parent} set ${this.col} = ${this.col} + 1 where ${this.id} = ${this.param(1)} and ${this.author} = ${this.param(2)}`;
-      const s2: Statement = { query, params: [obj.id, obj.author]};
+      const ob: any = obj;
+      const s2: Statement = { query, params: [ob[this.idField], ob[this.authorField]] };
       return this.execBatch([stmt, s2], true);
     } else {
       return Promise.resolve(0);
@@ -138,17 +172,42 @@ export class SqlRateCommentRepository extends Repository<RateComment, string> im
     const stmt = buildToDelete<string>(commentId, this.table, this.primaryKeys, this.param);
     if (stmt) {
       const query = `update ${this.parent} set ${this.col} = ${this.col} - 1 where ${this.id} = ${this.param(1)} and ${this.author} = ${this.param(2)}`;
-      const s2: Statement = { query, params: [id, author]};
+      const s2: Statement = { query, params: [id, author] };
       return this.execBatch([stmt, s2]);
     } else {
       return Promise.resolve(0);
     }
   }
+  getComments(id: string, author: string, limit?: number): Promise<T[]> {
+    let sql = `select * from ${this.table} where ${this.idCol} = ${this.param(1)} and ${this.authorCol} = ${this.param(2)}`;
+    if (limit && limit > 0) {
+      sql = sql + ` order by ${this.time} desc limit ${limit}`;
+    } else {
+      sql = sql + ` order by ${this.time}`;
+    }
+    return this.query<T>(sql, [id, author], this.map).then(comments => {
+      if (limit && limit > 0) {
+        return revert<T>(comments);
+      } else {
+        return comments;
+      }
+    });
+  }
+}
+export function revert<T>(arr: T[]): T[] {
+  if (!arr || arr.length <= 1) {
+    return arr;
+  }
+  const newArr: T[] = [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    newArr.push(arr[i]);
+  }
+  return newArr;
 }
 // tslint:disable-next-line:max-classes-per-file
 export class SqlRateReactionRepository implements RateReactionRepository {
   constructor(protected db: DB, protected table: string, protected attributes: Attributes,
-      protected parent: string, col?: string, author?: string, id?: string) {
+    protected parent: string, col?: string, author?: string, id?: string) {
     this.col = (col && col.length > 0 ? col : 'replycount');
     this.id = (id && id.length > 0 ? id : 'id');
     this.author = (author && author.length > 0 ? author : 'author');
@@ -166,19 +225,19 @@ export class SqlRateReactionRepository implements RateReactionRepository {
   }
   remove(id: string, author: string, userId: string): Promise<number> {
     const query1 = `delete from ${this.table} where id = ${this.db.param(1)} and author = ${this.db.param(2)} and userId= ${this.db.param(3)}`;
-    const s1: Statement = {query: query1, params: [id, author, userId]};
+    const s1: Statement = { query: query1, params: [id, author, userId] };
     const query2 = `update ${this.parent} set ${this.col} = ${this.col} - 1 where ${this.id} = ${this.db.param(1)} and ${this.author} = ${this.db.param(2)}`;
-    const s2: Statement = {query: query2, params: [id, author]};
+    const s2: Statement = { query: query2, params: [id, author] };
     return this.db.execBatch([s1, s2], true);
   }
   save(id: string, author: string, userId: string, reaction: number): Promise<number> {
-    const obj: RateReaction = { id, userId, author, time: new Date(), reaction};
+    const obj: RateReaction = { id, userId, author, time: new Date(), reaction };
     const stmt = buildToInsert(obj, this.table, this.attributes, this.db.param);
     if (stmt) {
       return this.exist(id, author, userId).then(ok => {
         if (ok === false) {
           const query = `update ${this.parent} set ${this.col} = ${this.col} + 1 where ${this.id} = ${this.db.param(1)} and ${this.author} = ${this.db.param(2)}`;
-          const s2: Statement = {query, params: [id, author]};
+          const s2: Statement = { query, params: [id, author] };
           return this.db.execBatch([stmt, s2]);
         } else {
           return Promise.resolve(0);

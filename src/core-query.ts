@@ -1,18 +1,3 @@
-export interface RateId {
-  id: string;
-  author: string;
-}
-
-export interface Rate {
-  id: string;
-  author: string;
-  rate: number;
-  time: Date;
-  review: string;
-  usefulCount: number;
-  replyCount: number;
-}
-
 export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
   | 'boolean' | 'number' | 'integer' | 'string' | 'text'
   | 'object' | 'array' | 'binary'
@@ -71,10 +56,10 @@ export interface Repository<T, ID> extends ViewRepository<T, ID> {
   save?(obj: T, ctx?: any): Promise<number>;
   delete(id: ID, ctx?: any): Promise<number>;
 }
-export interface RateRepository {
-  insert(rate: Rate, newInfo?: boolean): Promise<number>;
-  update(rate: Rate, oldRate: number): Promise<number>;
-  getRate(id: string, author: string): Promise<Rate | null>;
+export interface RateRepository<R> {
+  insert(rate: R, newInfo?: boolean): Promise<number>;
+  update(rate: R, oldRate: number): Promise<number>;
+  getRate(id: string, author: string): Promise<R | null>;
 }
 export interface InfoRepository<T> extends ViewRepository<T, string> {
   save(obj: T, ctx?: any): Promise<number>;
@@ -90,20 +75,7 @@ export interface RateReactionRepository {
   remove(id: string, author: string, userId: string, ctx?: any): Promise<number>;
   save(id: string, author: string, userId: string, type: number): Promise<number>;
 }
-export interface RateComment {
-  commentId: string;
-  id: string;
-  author: string;
-  userId: string;
-  comment: string;
-  time: Date;
-  updatedAt?: Date;
-  histories?: ShortComment[];
-}
-export interface ShortComment {
-  comment: string;
-  time: Date;
-}
-export interface RateCommentRepository extends Repository<RateComment, string> {
+export interface CommentRepository<T> extends Repository<T, string> {
   remove(commentId: string, id: string, author: string): Promise<number>;
+  getComments(id: string, author: string, limit?: number): Promise<T[]>;
 }
