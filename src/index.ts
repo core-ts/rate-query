@@ -24,17 +24,36 @@ export const rateReactionModel: Attributes = {
 };
 
 export class SqlRateRepository<R> implements RateRepository<R> {
-  constructor(public db: DB, public table: string, public attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, public max: number, public infoTable: string, count?: string, score?: string, rate?: string, rateField?: string, authorCol?: string, id?: string, idField?: string, idCol?: string) {
+  constructor(public db: DB, public table: string, public attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, public max: number, public infoTable: string, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string, rateCol?: string) {
     const m = metadata(attributes);
     this.map = m.map;
     this.id = (id && id.length > 0 ? id : 'id');
-    this.rate = (rate && rate.length > 0 ? rate : 'rate');
+    this.rate = (rateCol && rateCol.length > 0 ? rateCol : 'rate');
     this.count = (count && count.length > 0 ? count : 'count');
     this.score = (score && score.length > 0 ? score : 'score');
     this.idField = (idField && idField.length > 0 ? idField : 'id');
     this.rateField = (rateField && rateField.length > 0 ? rateField : 'rate');
-    this.idCol = (idCol && idCol.length > 0 ? idCol : 'id');
     this.authorCol = (authorCol && authorCol.length > 0 ? authorCol : 'author');
+    if (idCol && idCol.length > 0) {
+      this.idCol = idCol;
+    } else {
+      const c = attributes[this.idField];
+      if (c) {
+        this.idCol = (c.column && c.column.length > 0 ? c.column : this.idField);
+      } else {
+        this.idCol = this.idField;
+      }
+    }
+    if (rateCol && rateCol.length > 0) {
+      this.rate = rateCol;
+    } else {
+      const c = attributes[this.rateField];
+      if (c) {
+        this.rate = (c.column && c.column.length > 0 ? c.column : this.rateField);
+      } else {
+        this.rate = this.rateField;
+      }
+    }
     this.getRate = this.getRate.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -135,7 +154,7 @@ export class SqlInfoRepository<T> extends SqlLoader<T, string> implements InfoRe
 }
 // tslint:disable-next-line:max-classes-per-file
 export class SqlCommentRepository<T> extends Repository<T, string> implements CommentRepository<T> {
-  constructor(db: DB, table: string, attrs: Attributes, protected parent: string, idField?: string, authorField?: string, idCol?: string, authorCol?: string, col?: string, author?: string, time?: string, id?: string) {
+  constructor(db: DB, table: string, attrs: Attributes, protected parent: string, idField?: string, authorField?: string, col?: string, author?: string, time?: string, id?: string, idCol?: string, authorCol?: string) {
     super(db, table, attrs);
     this.col = (col && col.length > 0 ? col : 'replycount');
     this.id = (id && id.length > 0 ? id : 'id');
@@ -143,8 +162,26 @@ export class SqlCommentRepository<T> extends Repository<T, string> implements Co
     this.time = (time && time.length > 0 ? time : 'time');
     this.idField = (idField && idField.length > 0 ? idField : 'id');
     this.authorField = (authorField && authorField.length > 0 ? authorField : 'author');
-    this.idCol = (idCol && idCol.length > 0 ? idCol : 'id');
-    this.authorCol = (authorCol && authorCol.length > 0 ? authorCol : 'author');
+    if (idCol && idCol.length > 0) {
+      this.idCol = idCol;
+    } else {
+      const c = attrs[this.idField];
+      if (c) {
+        this.idCol = (c.column && c.column.length > 0 ? c.column : this.idField);
+      } else {
+        this.idCol = this.idField;
+      }
+    }
+    if (authorCol && authorCol.length > 0) {
+      this.authorCol = authorCol;
+    } else {
+      const c = attrs[this.authorField];
+      if (c) {
+        this.authorCol = (c.column && c.column.length > 0 ? c.column : this.authorField);
+      } else {
+        this.authorCol = this.authorField;
+      }
+    }
     this.insert = this.insert.bind(this);
     this.remove = this.remove.bind(this);
     this.getComments = this.getComments.bind(this);
