@@ -1,6 +1,6 @@
 {
   "name": "rate-query",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "rate-query",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com/core-ts/reaction-query"
+    "url": "git@github.com/core-ts/rate-query"
   },
   "keywords": [
     "rate-query"
