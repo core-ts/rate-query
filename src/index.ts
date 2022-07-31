@@ -1,5 +1,5 @@
 import { Attributes, buildToDelete, buildToInsert, buildToUpdate, DB, metadata, Repository, SqlLoader, Statement, StringMap } from 'query-core';
-import { CommentRepository, InfoRepository, RateReaction, RateReactionRepository, RateRepository } from './core-query';
+import { CommentRepository, InfoRepository, Reaction, ReactionRepository, RateRepository } from './core-query';
 
 export * from './core-query';
 export const rateReactionModel: Attributes = {
@@ -242,38 +242,44 @@ export function revert<T>(arr: T[]): T[] {
   return newArr;
 }
 // tslint:disable-next-line:max-classes-per-file
-export class SqlRateReactionRepository implements RateReactionRepository {
+export class SqlReactionRepository implements ReactionRepository {
   constructor(protected db: DB, protected table: string, protected attributes: Attributes,
-    protected parent: string, col?: string, author?: string, id?: string) {
-    this.col = (col && col.length > 0 ? col : 'replycount');
-    this.id = (id && id.length > 0 ? id : 'id');
-    this.author = (author && author.length > 0 ? author : 'author');
+    protected parent: string, col?: string, author?: string, id?: string, userIdCol?: string, authorCol?: string, idCol?: string) {
+    this.col = (col && col.length > 0 ? col : 'usefulcount');
+    this.parentId = (id && id.length > 0 ? id : 'id');
+    this.parentAuthor = (author && author.length > 0 ? author : 'author');
+    this.userIdCol = (userIdCol && userIdCol.length > 0 ? userIdCol : 'userId');
+    this.idCol = (idCol && idCol.length > 0 ? idCol : this.parentId);
+    this.authorCol = (authorCol && authorCol.length > 0 ? authorCol : this.parentAuthor);
     this.exist = this.exist.bind(this);
     this.save = this.save.bind(this);
-    this.remove = this.remove.bind(this);
+    this.remove = this.remove.bind(this); 
   }
-  protected col: string;
-  protected id: string;
-  protected author: string;
+  col: string;
+  parentId: string;
+  parentAuthor: string;
+  idCol: string;
+  authorCol: string;
+  userIdCol: string;
   protected exist(id: string, author: string, userId: string): Promise<boolean> {
-    return this.db.query<RateReaction>(`select id from ${this.table} where id = ${this.db.param(1)} and author = ${this.db.param(2)} and userId = ${this.db.param(3)}`, [id, author, userId]).then(rates => {
+    return this.db.query<Reaction>(`select ${this.idCol} from ${this.table} where ${this.idCol} = ${this.db.param(1)} and ${this.authorCol} = ${this.db.param(2)} and ${this.userIdCol} = ${this.db.param(3)}`, [id, author, userId]).then(rates => {
       return rates && rates.length > 0 ? true : false;
     });
   }
   remove(id: string, author: string, userId: string): Promise<number> {
-    const query1 = `delete from ${this.table} where id = ${this.db.param(1)} and author = ${this.db.param(2)} and userId= ${this.db.param(3)}`;
+    const query1 = `delete from ${this.table} where ${this.idCol} = ${this.db.param(1)} and ${this.authorCol} = ${this.db.param(2)} and ${this.userIdCol}= ${this.db.param(3)}`;
     const s1: Statement = { query: query1, params: [id, author, userId] };
-    const query2 = `update ${this.parent} set ${this.col} = ${this.col} - 1 where ${this.id} = ${this.db.param(1)} and ${this.author} = ${this.db.param(2)}`;
+    const query2 = `update ${this.parent} set ${this.col} = ${this.col} - 1 where ${this.parentId} = ${this.db.param(1)} and ${this.parentAuthor} = ${this.db.param(2)}`;
     const s2: Statement = { query: query2, params: [id, author] };
     return this.db.execBatch([s1, s2], true);
   }
   save(id: string, author: string, userId: string, reaction: number): Promise<number> {
-    const obj: RateReaction = { id, userId, author, time: new Date(), reaction };
+    const obj: Reaction = { id, userId, author, time: new Date(), reaction };
     const stmt = buildToInsert(obj, this.table, this.attributes, this.db.param);
     if (stmt) {
       return this.exist(id, author, userId).then(ok => {
         if (ok === false) {
-          const query = `update ${this.parent} set ${this.col} = ${this.col} + 1 where ${this.id} = ${this.db.param(1)} and ${this.author} = ${this.db.param(2)}`;
+          const query = `update ${this.parent} set ${this.col} = ${this.col} + 1 where ${this.parentId} = ${this.db.param(1)} and ${this.parentAuthor} = ${this.db.param(2)}`;
           const s2: Statement = { query, params: [id, author] };
           return this.db.execBatch([stmt, s2]);
         } else {

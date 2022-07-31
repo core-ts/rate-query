@@ -64,14 +64,14 @@ export interface RateRepository<R> {
 export interface InfoRepository<T> extends ViewRepository<T, string> {
   save(obj: T, ctx?: any): Promise<number>;
 }
-export interface RateReaction {
+export interface Reaction {
   id: string;
   author: string;
   userId: string;
   time: Date;
   reaction: number;
 }
-export interface RateReactionRepository {
+export interface ReactionRepository {
   remove(id: string, author: string, userId: string, ctx?: any): Promise<number>;
   save(id: string, author: string, userId: string, type: number): Promise<number>;
 }
