@@ -110,6 +110,9 @@ export class SqlRateRepository<R> implements RateRepository<R> {
     return query;
   }
   protected updateOldInfo(newRate: number, oldRate: number): string {
+    if (newRate === oldRate) {
+      return '';
+    }
     const delta = newRate - oldRate;
     const query = `
       update ${this.infoTable} set ${this.rate} = (${this.score} + ${delta})/${this.count}, ${this.score} = ${this.score} + ${delta}, ${this.rate}${newRate} = ${this.rate}${newRate} + 1, ${this.rate}${oldRate} = ${this.rate}${oldRate} - 1
