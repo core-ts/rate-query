@@ -4,7 +4,7 @@ import { RateRepository } from './core-query';
 export * from './core-query';
 
 export class SqlRateRepository<R> implements RateRepository<R> {
-  constructor(public db: DB, public table: string, public attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, public max: number, public infoTable: string, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string, rateCol?: string) {
+  constructor(protected db: DB, protected table: string, protected attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, protected max: number, protected infoTable: string, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string, rateCol?: string) {
     const m = metadata(attributes);
     this.map = m.map;
     this.id = (id && id.length > 0 ? id : 'id');
@@ -35,7 +35,7 @@ export class SqlRateRepository<R> implements RateRepository<R> {
       }
     }
     this.load = this.load.bind(this);
-    this.insert = this.insert.bind(this);
+    this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.insertInfo = this.insertInfo.bind(this);
     this.updateNewInfo = this.updateNewInfo.bind(this);
@@ -55,7 +55,7 @@ export class SqlRateRepository<R> implements RateRepository<R> {
       return rates && rates.length > 0 ? rates[0] : null;
     });
   }
-  insert(rate: R, newInfo?: boolean): Promise<number> {
+  create(rate: R, newInfo?: boolean): Promise<number> {
     const stmt = buildToInsert(rate, this.table, this.attributes, this.db.param);
     if (stmt) {
       const obj: any = rate;
@@ -132,9 +132,9 @@ export function avg(n: number[]): number {
   return sum / n.length;
 }
 export class SqlRatesRepository<R extends BaseRate> {
-  constructor(public db: DB, public table: string, public fullTable: string, public tables: string[], public attributes: Attributes,
+  constructor(protected db: DB, protected table: string, protected fullTable: string, protected tables: string[], protected attributes: Attributes,
     protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined,
-    public max: number, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string,
+    protected max: number, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string,
     rateCol?: string) {
     const m = metadata(attributes);
     this.map = m.map;
@@ -166,7 +166,7 @@ export class SqlRatesRepository<R extends BaseRate> {
       }
     }
     this.load = this.load.bind(this);
-    this.insert = this.insert.bind(this);
+    this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.insertInfo = this.insertInfo.bind(this);
     this.insertFullInfo = this.insertFullInfo.bind(this);
@@ -189,7 +189,7 @@ export class SqlRatesRepository<R extends BaseRate> {
       return rates && rates.length > 0 ? rates[0] : null;
     });
   }
-  insert(rate: R, newInfo?: boolean): Promise<number> {
+  create(rate: R, newInfo?: boolean): Promise<number> {
     if (rate.rates.length !== this.tables.length) {
       return Promise.reject('Invalid rates length');
     }
@@ -207,7 +207,6 @@ export class SqlRatesRepository<R extends BaseRate> {
       }
       const fullStmt: Statement = { query: this.insertFullInfo(rate.rate, this.fullTable, this.tables), params: [id, id, id, id, id, id] };
       stmts.push(fullStmt);
-      console.log(fullStmt);
       stmts.push(mainStmt);
       return this.db.execBatch(stmts, true);
     } else {

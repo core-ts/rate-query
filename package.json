@@ -1,6 +1,6 @@
 {
   "name": "rate-query",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "rate-query",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
@@ -9,7 +9,7 @@
     "clean:lib": "rimraf lib"
   },
   "devDependencies": {
-    "query-core": "^0.1.22",
+    "query-core": "^0.5.2",
     "tslint": "5.10.0",
     "typescript": "^3.3.3333"
   },
