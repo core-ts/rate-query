@@ -1,11 +1,11 @@
-import { Attributes, buildToInsert, buildToUpdate, DB, metadata, Statement, StringMap } from 'query-core';
+import { Attributes, buildMetadata, buildToInsert, buildToUpdate, DB, Statement, StringMap } from 'query-core';
 import { RateRepository } from './core-query';
 
 export * from './core-query';
 
 export class SqlRateRepository<R> implements RateRepository<R> {
   constructor(protected db: DB, protected table: string, protected attributes: Attributes, protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined, protected max: number, protected infoTable: string, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string, rateCol?: string) {
-    const m = metadata(attributes);
+    const m = buildMetadata(attributes);
     this.map = m.map;
     this.id = (id && id.length > 0 ? id : 'id');
     this.rate = (rateCol && rateCol.length > 0 ? rateCol : 'rate');
@@ -64,11 +64,11 @@ export class SqlRateRepository<R> implements RateRepository<R> {
       if (newInfo) {
         const query = this.insertInfo(rateNum);
         const s2: Statement = { query, params: [id] };
-        return this.db.execBatch([s2, stmt], true);
+        return this.db.executeBatch([s2, stmt], true);
       } else {
         const query = this.updateNewInfo(rateNum);
         const s2: Statement = { query, params: [id] };
-        return this.db.execBatch([s2, stmt], true);
+        return this.db.executeBatch([s2, stmt], true);
       }
     } else {
       return Promise.resolve(-1);
@@ -98,7 +98,7 @@ export class SqlRateRepository<R> implements RateRepository<R> {
       const id: string = obj[this.idField];
       const query = this.updateOldInfo(rateNum, oldRate);
       const s2: Statement = { query, params: [id] };
-      return this.db.execBatch([s2, stmt], true);
+      return this.db.executeBatch([s2, stmt], true);
     } else {
       return Promise.resolve(-1);
     }
@@ -136,7 +136,7 @@ export class SqlRatesRepository<R extends BaseRate> {
     protected buildToSave: <K>(obj: K, table: string, attrs: Attributes, ver?: string, buildParam?: (i: number) => string, i?: number) => Statement | undefined,
     protected max: number, rateField?: string, count?: string, score?: string, authorCol?: string, id?: string, idField?: string, idCol?: string,
     rateCol?: string) {
-    const m = metadata(attributes);
+    const m = buildMetadata(attributes);
     this.map = m.map;
     this.id = (id && id.length > 0 ? id : 'id');
     this.rate = (rateCol && rateCol.length > 0 ? rateCol : 'rate');
@@ -208,7 +208,7 @@ export class SqlRatesRepository<R extends BaseRate> {
       const fullStmt: Statement = { query: this.insertFullInfo(rate.rate, this.fullTable, this.tables), params: [id, id, id, id, id, id] };
       stmts.push(fullStmt);
       stmts.push(mainStmt);
-      return this.db.execBatch(stmts, true);
+      return this.db.executeBatch(stmts, true);
     } else {
       const fullStmt: Statement = { query: this.updateFullInfo(rate.rate, this.fullTable, this.tables), params: [id, id, id, id, id, id] };
       stmts.push(fullStmt);
@@ -217,7 +217,7 @@ export class SqlRatesRepository<R extends BaseRate> {
         stmts.push({ query: sql, params: [id] });
       }
       stmts.push(mainStmt);
-      return this.db.execBatch(stmts, true);
+      return this.db.executeBatch(stmts, true);
     }
   }
   protected insertInfo(r: number, table: string): string {
@@ -305,7 +305,7 @@ export class SqlRatesRepository<R extends BaseRate> {
         const query: Statement = { query: this.updateOldInfo(rate.rate, oldRate, this.fullTable, this.tables), params: [id, id, id, id, id, id] };
         stmts.push(query);
         stmts.push(stmt);
-        return this.db.execBatch(stmts, true);
+        return this.db.executeBatch(stmts, true);
       } else {
         return Promise.resolve(-1);
       }
@@ -314,7 +314,7 @@ export class SqlRatesRepository<R extends BaseRate> {
         return Promise.reject('cannot build to insert rate');
       } else {
         stmts.push(stmt);
-        return this.db.execBatch(stmts, true);
+        return this.db.executeBatch(stmts, true);
       }
     }
   }
