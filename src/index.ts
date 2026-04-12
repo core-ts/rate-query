@@ -270,7 +270,7 @@ export class Rater implements RateService {
       await tx.commit()
       return count
     } catch (err) {
-      tx.rollback()
+      await tx.rollback()
       throw err
     }
   }
