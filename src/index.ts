@@ -236,7 +236,7 @@ export interface RateService {
 }
 // tslint:disable-next-line:max-classes-per-file
 export class Rater implements RateService {
-  constructor(protected db: DB, protected max: number, protected rateRepository: RateRepository, protected rateSummaryRepository: RateSummaryRepository) {
+  constructor(protected db: DB, protected rateRepository: RateRepository, protected rateSummaryRepository: RateSummaryRepository) {
   }
   async rate(rateReq: SubmittedRate): Promise<number> {
     const rate: Rate = {id: rateReq.id, author: rateReq.author, rate: rateReq.rate, time: new Date(), review: rateReq.review}
