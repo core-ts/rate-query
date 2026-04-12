@@ -13,8 +13,7 @@
     "experimentalDecorators": false,
     "removeComments": true,
     "lib": [
-      "DOM",
-      "es7"
+      "es6"
     ]
   },
   "include": [
