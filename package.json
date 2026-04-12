@@ -1,7 +1,7 @@
 {
-  "name": "rate-query",
-  "version": "0.5.2",
-  "description": "rate-query",
+  "name": "rate-sql",
+  "version": "0.1.0",
+  "description": "rate-sql",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
   "scripts": {
