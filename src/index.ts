@@ -201,3 +201,77 @@ export class SqlRateRepository<R> {
     return query;
   }
 }
+
+export interface SubmittedRate {
+  id: string;
+  author: string;
+  rate: number;
+  review: string;
+}
+export interface Rate {
+  id: string;
+  author: string;
+  rate: number;
+  time: Date;
+  review: string;
+  histories?: History[];
+}
+
+export interface History {
+  rate: number;
+  time: Date;
+  review: string;
+}
+
+export interface RateRepository {
+  create(rate: Rate, newInfo?: boolean, tx?: Transaction): Promise<number>
+  update(rate: Rate, oldRate: number, tx?: Transaction): Promise<number>
+  load(id: string, author: string, tx?: Transaction): Promise<Rate | null>
+}
+export interface RateSummaryRepository {
+  exist(id: string, tx?: Transaction): Promise<boolean>
+}
+export interface RateService {
+  rate(rateReq: SubmittedRate): Promise<number>
+}
+// tslint:disable-next-line:max-classes-per-file
+export class Rater implements RateService {
+  constructor(protected db: DB, protected max: number, protected rateRepository: RateRepository, protected rateSummaryRepository: RateSummaryRepository) {
+  }
+  async rate(rateReq: SubmittedRate): Promise<number> {
+    const rate: Rate = {id: rateReq.id, author: rateReq.author, rate: rateReq.rate, time: new Date(), review: rateReq.review}
+    const tx = await this.db.beginTransaction()
+    try {
+      const summary = await this.rateSummaryRepository.exist(rateReq.id, tx)
+      if (!summary) {
+        const res = await this.rateRepository.create(rate, true, tx)
+        await tx.commit()
+        return res;
+      }
+      const exist = await this.rateRepository.load(rateReq.id, rateReq.author, tx)
+      if (!exist) {
+        const res = await this.rateRepository.create(rate, false, tx)
+        await tx.commit()
+        return res;
+      }
+      const history: History = { review: exist.review, rate: exist.rate, time: exist.time }
+      if (exist.histories && exist.histories.length > 0) {
+        const histories = exist.histories;
+        histories.push(history);
+        exist.histories = histories;
+      } else {
+        exist.histories = [history];
+      }
+      const oldRate = exist.rate
+      exist.rate = rateReq.rate
+      exist.review = rateReq.review
+      exist.time = new Date()
+      const count = await this.rateRepository.update(exist, oldRate, tx)
+      await tx.commit()
+      return count
+    } catch (err) {
+      tx.rollback()
+      throw err
+    }
+  }
+}
