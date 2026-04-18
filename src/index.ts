@@ -232,11 +232,17 @@ export interface RateSummaryRepository {
   exist(id: string, tx?: Transaction): Promise<boolean>
 }
 export interface RateService {
+  getRate(id: string, author: string): Promise<Rate | null>
   rate(rateReq: SubmittedRate): Promise<number>
 }
 // tslint:disable-next-line:max-classes-per-file
 export class Rater implements RateService {
   constructor(protected db: DB, protected rateRepository: RateRepository, protected rateSummaryRepository: RateSummaryRepository) {
+    this.getRate = this.getRate.bind(this)
+    this.rate = this.rate.bind(this)
+  }
+  getRate(id: string, author: string): Promise<Rate | null> {
+    return this.rateRepository.load(id, author)
   }
   async rate(rateReq: SubmittedRate): Promise<number> {
     const rate: Rate = {id: rateReq.id, author: rateReq.author, rate: rateReq.rate, time: new Date(), review: rateReq.review}
