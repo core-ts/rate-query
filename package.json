@@ -1,7 +1,7 @@
 {
-  "name": "rate-query",
-  "version": "0.5.4",
-  "description": "rate-query",
+  "name": "rate-sql",
+  "version": "0.1.2",
+  "description": "rate-sql",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
   "scripts": {
@@ -20,6 +20,6 @@
     "url": "git@github.com/core-ts/rate-sql"
   },
   "keywords": [
-    "rate-query"
+    "rate-sql"
   ]
 }

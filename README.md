@@ -1,1 +1,1 @@
-# rate-query
+# rate-sql
