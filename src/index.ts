@@ -233,6 +233,8 @@ export interface RateSummaryRepository {
 }
 export interface RateService {
   getRate(id: string, author: string): Promise<Rate | null>
+  setUseful(rateId: string, userId: string): Promise<number>
+  removeUseful(rateId: string, userId: string): Promise<number>
   rate(rateReq: SubmittedRate): Promise<number>
 }
 export interface UsefulRepository {
@@ -242,19 +244,19 @@ export interface UsefulRepository {
 // tslint:disable-next-line:max-classes-per-file
 export class Rater implements RateService {
   constructor(protected db: DB, protected rateRepository: RateRepository, protected rateSummaryRepository: RateSummaryRepository, protected usefulRepository: UsefulRepository) {
+    this.getRate = this.getRate.bind(this)
     this.setUseful = this.setUseful.bind(this)
     this.removeUseful = this.removeUseful.bind(this)
-    this.getRate = this.getRate.bind(this)
     this.rate = this.rate.bind(this)
+  }
+  getRate(id: string, author: string): Promise<Rate | null> {
+    return this.rateRepository.load(id, author)
   }
   setUseful(rateId: string, userId: string): Promise<number> {
     return this.usefulRepository.setUseful(rateId, userId)
   }
   removeUseful(rateId: string, userId: string): Promise<number> {
     return this.usefulRepository.removeUseful(rateId, userId)
-  }
-  getRate(id: string, author: string): Promise<Rate | null> {
-    return this.rateRepository.load(id, author)
   }
   async rate(rateReq: SubmittedRate): Promise<number> {
     const rate: Rate = {id: rateReq.id, author: rateReq.author, rate: rateReq.rate, time: new Date(), review: rateReq.review}
